@@ -212,17 +212,6 @@ void FGenerateUMGHelper::SetWidgetCenterAlignment(UWidget* Widget, PanelContext*
         {
             Slot->SetSize(Info->Size());
 
-//             if (Info->Parent == nullptr )
-//             {
-//                 ParentPos = FVector2D(0, 0);
-//             }
-//             else
-//             {
-// 
-//                 ParentPos = Info->Parent->GetSelfUMGPosition();
-//             }
-           
-            //FVector2D WidgetPosition = Info->ConvertPSDCoordinatesToUMGPosition(ParentPos);
             FVector2D WidgetPosition = Info->GetSelfUMGPosition();
             Slot->SetPosition(FVector2D(WidgetPosition.X, WidgetPosition.Y));
             
@@ -231,10 +220,7 @@ void FGenerateUMGHelper::SetWidgetCenterAlignment(UWidget* Widget, PanelContext*
     // For other panel slots (like Vertical/Horizontal Box)
     else if (Widget->Slot)
     {
-//         Widget->Slot->SetHorizontalAlignment(HAlign_Center);
-//         Widget->Slot->SetVerticalAlignment(VAlign_Center);
-//         Widget->Slot->SetHorizontalAlignment(HAlign_Center);
-//         Widget->Slot->SetVerticalAlignment(VAlign_Center);
+
     }
 }
 
@@ -399,6 +385,54 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
     {
         if (UButton* Button = Cast<UButton>(WidgetToConfigure))
         {
+            for (PanelContext* ChildNode : Node->Children)
+            {
+                FString ChildType = ChildNode->ControlType;
+                if (ChildType == TEXT("Text"))
+                {
+                    CreateWidgetRecursive(WBP, Button, ChildNode);
+                    continue;
+                }
+
+                FString ImageName = ChildNode->ControlName;
+                FString PSDPath = PSDHelper->GetPSDTexturePath();
+                FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
+                FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
+
+                // 3. 加载并设置纹理...
+                if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
+                {
+                    FButtonStyle ButtonStyle = Button->WidgetStyle;
+                    // 设置普通状态图片
+                    if (ImageName.Contains(TEXT("_Normal"),ESearchCase::IgnoreCase))
+                    {
+                        ButtonStyle.Normal.SetResourceObject(Texture); 
+                        ButtonStyle.Normal.TintColor = FLinearColor::White;
+                    }
+                    else if (ImageName.Contains(TEXT("_Hovered"), ESearchCase::IgnoreCase))
+                    {
+                        ButtonStyle.Normal.SetResourceObject(Texture);
+                        ButtonStyle.Normal.TintColor = FLinearColor::Yellow;
+                    }
+                    else if (ImageName.Contains(TEXT("_Pressed"), ESearchCase::IgnoreCase))
+                    {
+                        ButtonStyle.Normal.SetResourceObject(Texture);
+                        ButtonStyle.Normal.TintColor = FLinearColor::White;
+                    }
+                    else if (ImageName.Contains(TEXT("_Disabled"), ESearchCase::IgnoreCase))
+                    {
+                        ButtonStyle.Normal.SetResourceObject(Texture);
+                        ButtonStyle.Normal.TintColor = FLinearColor::Gray;
+                    }
+                    
+                    // 应用新样式
+                    Button->SetStyle(ButtonStyle);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
+                }
+            }
 
         }
     }
@@ -472,59 +506,6 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
         }
     }
 
-//     bool bChildrenAreConsumed = false;
-// 
-//     // --- Special Handling for Composite Widgets ---
-// 
-//     if (UButton* Button = Cast<UButton>(WidgetToConfigure))
-//     {
-//         // A button consumes its children to set style and content.
-//         for (PanelContext* ChildNode : Node->Children)
-//         {
-//             FString ChildName = ChildNode->ControlName;
-//             FString ChildType = ChildNode->ControlType;
-//            // ParseLayerName(ChildNode->ControlName, ChildName, ChildType, ChildParams);
-// 
-//             // Example: Find the text layer and set it as the button's content.
-//             // You can check for "Title" or a specific type like "Text".
-//             if (ChildName.Equals(TEXT("Title")))
-//             {
-//                 UWidget* ContentWidget = CreateWidgetRecursive(WBP, Button, ChildNode);
-//                 // The recursive call will automatically use Button->SetContent.
-//             }
-//             // Example: Find the image layer and set it as the button's style.
-//             else if (ChildType.Equals(TEXT("PSDTestAtlas")) || ChildType.Equals(TEXT("Texture")))
-//             {
-//                 // This is where you would load the texture/material from the atlas info
-//                 // and apply it to the button's style (e.g., Button->WidgetStyle.Normal.SetResourceObject(...)).
-//                 // For now, we'll just create the image as a placeholder.
-//                 CreateWidgetRecursive(WBP, Button, ChildNode);
-//             }
-//         }
-//         bChildrenAreConsumed = true;
-//     }
-//     else if (USlider* Slider = Cast<USlider>(WidgetToConfigure))
-//     {
-//         // A slider consumes children like _Handle, _Fill, _Bg to configure its appearance.
-//         // This requires more detailed logic to find the specific child layers and apply their
-//         // properties (like images) to the slider's style properties.
-//         bChildrenAreConsumed = true;
-//     }
-//     // Add more handlers for other composite types (Toggle, InputField, etc.) here.
-//     // else if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure)) { ... }
-// 
-// 
-//     // --- Default Handling for Generic Panels ---
-//     if (!bChildrenAreConsumed)
-//     {
-//         if (UPanelWidget* Panel = Cast<UPanelWidget>(WidgetToConfigure))
-//         {
-//             for (PanelContext* ChildNode : Node->Children)
-//             {
-//                 CreateWidgetRecursive(WBP, Panel, ChildNode);
-//             }
-//         }
-//     }
 }
 // --- Utility Functions ---
 void FGenerateUMGHelper::ParseLayerName(const FString& FullName, FString& OutName, FString& OutType, FString& OutParams)
