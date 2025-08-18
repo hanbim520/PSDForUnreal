@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "WidgetBlueprint.h"
 #include "PSDHelper.h"
+#include "../../../../../../../Source/Runtime/UMG/Public/Components/Button.h"
 
 /**
  * 
@@ -45,6 +46,10 @@ public:
     {
         return PSDHelper;
     }
+
+    //------------set control info------------
+	void SetButtonInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
+    void SetImageOrTextInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
 
 private:
 

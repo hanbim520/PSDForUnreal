@@ -383,78 +383,15 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
 
     if (Node->ControlType.Equals(TEXT("Button"), ESearchCase::IgnoreCase))
     {
-        if (UButton* Button = Cast<UButton>(WidgetToConfigure))
-        {
-            for (PanelContext* ChildNode : Node->Children)
-            {
-                FString ChildType = ChildNode->ControlType;
-                if (ChildType == TEXT("Text"))
-                {
-                    CreateWidgetRecursive(WBP, Button, ChildNode);
-                    continue;
-                }
-
-                FString ImageName = ChildNode->ControlName;
-                FString PSDPath = PSDHelper->GetPSDTexturePath();
-                FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
-                FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
-
-                // 3. 加载并设置纹理...
-                if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
-                {
-                    FButtonStyle ButtonStyle = Button->WidgetStyle;
-                    // 设置普通状态图片
-                    if (ImageName.Contains(TEXT("_Normal"),ESearchCase::IgnoreCase))
-                    {
-                        ButtonStyle.Normal.SetResourceObject(Texture); 
-                        ButtonStyle.Normal.TintColor = FLinearColor::White;
-                    }
-                    else if (ImageName.Contains(TEXT("_Hovered"), ESearchCase::IgnoreCase))
-                    {
-                        ButtonStyle.Normal.SetResourceObject(Texture);
-                        ButtonStyle.Normal.TintColor = FLinearColor::Yellow;
-                    }
-                    else if (ImageName.Contains(TEXT("_Pressed"), ESearchCase::IgnoreCase))
-                    {
-                        ButtonStyle.Normal.SetResourceObject(Texture);
-                        ButtonStyle.Normal.TintColor = FLinearColor::White;
-                    }
-                    else if (ImageName.Contains(TEXT("_Disabled"), ESearchCase::IgnoreCase))
-                    {
-                        ButtonStyle.Normal.SetResourceObject(Texture);
-                        ButtonStyle.Normal.TintColor = FLinearColor::Gray;
-                    }
-                    
-                    // 应用新样式
-                    Button->SetStyle(ButtonStyle);
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
-                }
-            }
-
-        }
+        SetButtonInfo(WBP, WidgetToConfigure, Node);
+      
     }
     else if (Node->ControlType.Equals(TEXT("Image"), ESearchCase::IgnoreCase)
     || Node->ControlType.Contains(TEXT("Texture"), ESearchCase::IgnoreCase))
     {
         if (UImage* Image = Cast<UImage>(WidgetToConfigure))
         {
-            FString ImageName = Node->ControlName;
-            FString PSDPath = PSDHelper->GetPSDTexturePath();
-            FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
-            FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
-
-            // 3. 加载并设置纹理...
-            if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
-            {
-                Image->SetBrushFromTexture(Texture);
-            }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
-            }
+            SetImageOrTextInfo(WBP, Image, Node);
         }
     }
     else if (Node->ControlType.Equals(TEXT("Text"), ESearchCase::IgnoreCase))
@@ -563,4 +500,87 @@ PanelContext* FGenerateUMGHelper::GetControlInfo(PanelContext* Self)
     }
 
     return  Self->FindFirstChildWithControlInfo();
+}
+
+
+//------------set control info------------
+
+void FGenerateUMGHelper::SetButtonInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node)
+{
+    if (UButton* Button = Cast<UButton>(Widget))
+    {
+        for (PanelContext* ChildNode : Node->Children)
+        {
+            FString ChildType = ChildNode->ControlType;
+            if (ChildType == TEXT("Text"))
+            {
+                CreateWidgetRecursive(WBP, Button, ChildNode);
+                continue;
+            }
+
+            FString ImageName = ChildNode->ControlName;
+            FString PSDPath = PSDHelper->GetPSDTexturePath();
+            FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
+            FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
+
+            // 3. 加载并设置纹理...
+            if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
+            {
+                FButtonStyle ButtonStyle = Button->WidgetStyle;
+                // 设置普通状态图片
+                if (ImageName.Contains(TEXT("_Normal"), ESearchCase::IgnoreCase))
+                {
+                    ButtonStyle.Normal.SetResourceObject(Texture);
+                    ButtonStyle.Normal.TintColor = FLinearColor::White;
+                }
+                else if (ImageName.Contains(TEXT("_Hovered"), ESearchCase::IgnoreCase))
+                {
+                    ButtonStyle.Normal.SetResourceObject(Texture);
+                    ButtonStyle.Normal.TintColor = FLinearColor::Yellow;
+                }
+                else if (ImageName.Contains(TEXT("_Pressed"), ESearchCase::IgnoreCase))
+                {
+                    ButtonStyle.Normal.SetResourceObject(Texture);
+                    ButtonStyle.Normal.TintColor = FLinearColor::White;
+                }
+                else if (ImageName.Contains(TEXT("_Disabled"), ESearchCase::IgnoreCase))
+                {
+                    ButtonStyle.Normal.SetResourceObject(Texture);
+                    ButtonStyle.Normal.TintColor = FLinearColor::Gray;
+                }
+
+                // 应用新样式
+                Button->SetStyle(ButtonStyle);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
+            }
+        }
+    }
+}
+
+void FGenerateUMGHelper::SetImageOrTextInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node)
+{
+    if (UImage* Image = Cast<UImage>(Widget))
+    {
+        FString ImageName = Node->ControlName;
+        FString PSDPath = PSDHelper->GetPSDTexturePath();
+        FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
+        FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
+
+        // 3. 加载并设置纹理...
+        if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
+        {
+            Image->SetBrushFromTexture(Texture);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
+        }
+    }
+    else if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
+    {
+        TextBlock->SetText(FText::FromString(Node->ControlName));
+    }
 }
