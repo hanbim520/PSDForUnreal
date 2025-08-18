@@ -1,0 +1,3 @@
+VS 2022   
+WINSDK 20348  
+Unreal5.6
