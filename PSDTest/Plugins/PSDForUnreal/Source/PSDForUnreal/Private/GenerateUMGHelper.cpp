@@ -385,59 +385,78 @@ UWidget* FGenerateUMGHelper::CreateWidgetRecursive(UWidgetBlueprint* WBP, UPanel
     return NewWidget;
 }
 
+FString FGenerateUMGHelper::ConvertAbsolutePathToAssetPath(const FString& AbsolutePath)
+{
+    FString ContentDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+    return AbsolutePath.Replace(*ContentDir, TEXT("/Game/"));
+}
+
 void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWidget* WidgetToConfigure, PanelContext* Node)
 {
 
 
-    if (Node->ControlType.Contains(TEXT("Button"), ESearchCase::IgnoreCase))
+    if (Node->ControlType.Equals(TEXT("Button"), ESearchCase::IgnoreCase))
     {
         if (UButton* Button = Cast<UButton>(WidgetToConfigure))
         {
 
         }
     }
-    else if (Node->ControlType.Contains(TEXT("Text"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("Image"), ESearchCase::IgnoreCase)
+    || Node->ControlType.Contains(TEXT("Texture"), ESearchCase::IgnoreCase))
+    {
+        if (UImage* Image = Cast<UImage>(WidgetToConfigure))
+        {
+            FString ImageName = Node->ControlName;
+            FString PSDPath = PSDHelper->GetPSDTexturePath();
+            FString PackagePath = FPaths::Combine(PSDPath, ImageName + TEXT("_Texture"));
+            FString AssetPath = ConvertAbsolutePathToAssetPath(PackagePath);
+
+            // 3. 加载并设置纹理...
+            if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *AssetPath))
+            {
+                Image->SetBrushFromTexture(Texture);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to load texture: %s"), *AssetPath);
+            }
+        }
+    }
+    else if (Node->ControlType.Equals(TEXT("Text"), ESearchCase::IgnoreCase))
     {
         if (UTextBlock* TextBlock = Cast<UTextBlock>(WidgetToConfigure))
         {
             TextBlock->SetText(FText::FromString(Node->ControlName));
         }
     }
-    else if (Node->ControlType.Contains(TEXT("Image"), ESearchCase::IgnoreCase))
-    {
-        if (UImage* Image = Cast<UImage>(WidgetToConfigure))
-        {
-            // 这里可以设置图片的资源
-            // Image->SetBrushFromTexture(...);
-        }
-    }
-    else if (Node->ControlType.Contains(TEXT("Slider"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("Slider"), ESearchCase::IgnoreCase))
     {
         if (USlider* Slider = Cast<USlider>(WidgetToConfigure))
         {
             // 设置滑块的默认值或样式
         }
     }
-    else if (Node->ControlType.Contains(TEXT("EditableTextBox"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("EditableTextBox"), ESearchCase::IgnoreCase))
     {
         if (UEditableTextBox* EditableTextBox = Cast<UEditableTextBox>(WidgetToConfigure))
         {
             EditableTextBox->SetHintText(FText::FromString(Node->ControlName));
         }
     }
-    else if (Node->ControlType.Contains(TEXT("Toggle"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("Toggle"), ESearchCase::IgnoreCase))
     {
         if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure))
         {
             // 设置复选框的默认状态或样式
         }
     }
-    else if (Node->ControlType.Contains(TEXT("Common"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("Common"), ESearchCase::IgnoreCase))
     {
         // Common类型可以是一个占位符，可能需要特殊处理
         // 这里可以添加一些通用的处理逻辑
     }
-    else if (Node->ControlType.Contains(TEXT("PSDTestAtlas"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Equals(TEXT("PSDTestAtlas"), ESearchCase::IgnoreCase))
     {
         // 处理PSDTestAtlas类型的特殊逻辑
         // 这里可以添加一些特定的处理逻辑

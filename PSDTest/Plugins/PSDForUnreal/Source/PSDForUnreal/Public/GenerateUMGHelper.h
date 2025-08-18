@@ -35,5 +35,18 @@ public:
 	void ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWidget* WidgetToConfigure, PanelContext* Node);
 
 	void SupportUnrealType(UWidget* NewWidget, PanelContext* Node);
+	FString ConvertAbsolutePathToAssetPath(const FString& AbsolutePath);
 
+    void SetPSDHepler(FPSDHelper* InPSDHelper)
+    {
+        PSDHelper = InPSDHelper;
+    }
+    FPSDHelper* GetPSDHelper() const
+    {
+        return PSDHelper;
+    }
+
+private:
+
+    FPSDHelper* PSDHelper = nullptr;
 };

@@ -413,10 +413,16 @@ public:
 
    
     void  SavePNG_Unreal(const FString& FilePath, int32 Width, int32 Height, int32 Channels, const uint8_t* Data);
+    FString GetPSDTexturePath()
+    {
+        return FPaths::ProjectContentDir() / TEXT("UI") / FileName;
+    }
 
 private:
     bool bGeneratedPNG = true;
 
     std::vector<PanelContext*> rootNodes;
     std::map<PSD_NAMESPACE_NAME::Layer*, PanelContext*> nodeMap;
+
+   FString FileName = "";
 };

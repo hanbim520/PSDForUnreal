@@ -15,6 +15,7 @@ void UPSDHelperFunctionLibrary::ConvertPSDToUMG()
 
     FGenerateUMGHelper Helper;
     FString AssetPath = TEXT("/Game/WBP_FromPSD"); // Define your output path
+    Helper.SetPSDHepler(PSDHelper);
 
     // Assuming the first root node represents the entire panel.
     PanelContext* MainPanelNode = PSDHelper->GetRootNodes()[0];
