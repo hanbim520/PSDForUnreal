@@ -425,7 +425,7 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
             EditableTextBox->SetHintText(FText::FromString(Node->ControlName));
         }
     }
-    else if (Node->ControlType.Contains(TEXT("Toogle"), ESearchCase::IgnoreCase))
+    else if (Node->ControlType.Contains(TEXT("Toggle"), ESearchCase::IgnoreCase))
     {
         if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure))
         {
