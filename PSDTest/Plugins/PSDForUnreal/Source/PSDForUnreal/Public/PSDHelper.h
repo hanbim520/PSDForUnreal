@@ -66,6 +66,7 @@ static const unsigned int CHANNEL_NOT_FOUND = UINT_MAX;
  */
 struct PanelContext
 {
+
     /** @brief PSD文件的源路径 (The source path of the PSD file) */
     FString PsdPath;
 

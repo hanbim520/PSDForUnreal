@@ -34,4 +34,6 @@ public:
 	UClass* GetUMGClassFromString(const FString& TypeString);
 	void ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWidget* WidgetToConfigure, PanelContext* Node);
 
+	void SupportUnrealType(UWidget* NewWidget, PanelContext* Node);
+
 };

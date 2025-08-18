@@ -284,6 +284,46 @@ UWidgetBlueprint* FGenerateUMGHelper::GenerateUMGFromHierarchy(const FString& As
     return WBP;
 }
 
+void FGenerateUMGHelper::SupportUnrealType(UWidget* NewWidget, PanelContext* Node)
+{
+    if (Node->ControlType.Contains(TEXT("Button"),ESearchCase::IgnoreCase))
+    {   
+       
+    } else if (Node->ControlType.Contains(TEXT("Text"), ESearchCase::IgnoreCase))
+    {
+        if (UTextBlock* TextBlock = Cast<UTextBlock>(NewWidget))
+        {
+            TextBlock->SetText(FText::FromString(Node->ControlName));
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("Image"), ESearchCase::IgnoreCase))
+    {
+        if (UImage* Image = Cast<UImage>(NewWidget))
+        {
+            // 这里可以设置图片的资源
+            // Image->SetBrushFromTexture(...);
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("Slider"), ESearchCase::IgnoreCase))
+    {
+        if (USlider* Slider = Cast<USlider>(NewWidget))
+        {
+            // 设置滑块的默认值或样式
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("EditableTextBox"), ESearchCase::IgnoreCase))
+    {
+        if (UEditableTextBox* EditableTextBox = Cast<UEditableTextBox>(NewWidget))
+        {
+            EditableTextBox->SetHintText(FText::FromString(Node->ControlName));
+        }
+    }
+    else
+    {
+
+    }
+}
+
 // --- Recursive Widget Creation Logic ---
 UWidget* FGenerateUMGHelper::CreateWidgetRecursive(UWidgetBlueprint* WBP, UPanelWidget* ParentWidget, PanelContext* Node)
 {
@@ -294,7 +334,7 @@ UWidget* FGenerateUMGHelper::CreateWidgetRecursive(UWidgetBlueprint* WBP, UPanel
     //ParseLayerName(Node->ControlName, ObjectName, WidgetType, Params);
 
     // Skip structural or irrelevant layers gracefully without warnings.
-    if (ObjectName.Equals(TEXT("</Layer group>")) || ObjectName.Contains(TEXT("@")) || ObjectName.IsEmpty() || WidgetType.IsEmpty())
+    if (ObjectName.Equals(TEXT("</Layer group>")) || ObjectName.Contains(TEXT("@")) || ObjectName.IsEmpty() || WidgetType.IsEmpty() || ObjectName.Contains(TEXT("ControlInfo"), ESearchCase::IgnoreCase))
     {
         return nullptr;
     }
@@ -347,50 +387,62 @@ UWidget* FGenerateUMGHelper::CreateWidgetRecursive(UWidgetBlueprint* WBP, UPanel
 
 void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWidget* WidgetToConfigure, PanelContext* Node)
 {
-    bool bChildrenAreConsumed = false;
 
-    // --- Special Handling for Composite Widgets ---
 
-    if (UButton* Button = Cast<UButton>(WidgetToConfigure))
+    if (Node->ControlType.Contains(TEXT("Button"), ESearchCase::IgnoreCase))
     {
-        // A button consumes its children to set style and content.
-        for (PanelContext* ChildNode : Node->Children)
+        if (UButton* Button = Cast<UButton>(WidgetToConfigure))
         {
-            FString ChildName = ChildNode->ControlName;
-            FString ChildType = ChildNode->ControlType;
-           // ParseLayerName(ChildNode->ControlName, ChildName, ChildType, ChildParams);
 
-            // Example: Find the text layer and set it as the button's content.
-            // You can check for "Title" or a specific type like "Text".
-            if (ChildName.Equals(TEXT("Title")))
-            {
-                UWidget* ContentWidget = CreateWidgetRecursive(WBP, Button, ChildNode);
-                // The recursive call will automatically use Button->SetContent.
-            }
-            // Example: Find the image layer and set it as the button's style.
-            else if (ChildType.Equals(TEXT("PSDTestAtlas")) || ChildType.Equals(TEXT("Texture")))
-            {
-                // This is where you would load the texture/material from the atlas info
-                // and apply it to the button's style (e.g., Button->WidgetStyle.Normal.SetResourceObject(...)).
-                // For now, we'll just create the image as a placeholder.
-                CreateWidgetRecursive(WBP, Button, ChildNode);
-            }
         }
-        bChildrenAreConsumed = true;
     }
-    else if (USlider* Slider = Cast<USlider>(WidgetToConfigure))
+    else if (Node->ControlType.Contains(TEXT("Text"), ESearchCase::IgnoreCase))
     {
-        // A slider consumes children like _Handle, _Fill, _Bg to configure its appearance.
-        // This requires more detailed logic to find the specific child layers and apply their
-        // properties (like images) to the slider's style properties.
-        bChildrenAreConsumed = true;
+        if (UTextBlock* TextBlock = Cast<UTextBlock>(WidgetToConfigure))
+        {
+            TextBlock->SetText(FText::FromString(Node->ControlName));
+        }
     }
-    // Add more handlers for other composite types (Toggle, InputField, etc.) here.
-    // else if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure)) { ... }
-
-
-    // --- Default Handling for Generic Panels ---
-    if (!bChildrenAreConsumed)
+    else if (Node->ControlType.Contains(TEXT("Image"), ESearchCase::IgnoreCase))
+    {
+        if (UImage* Image = Cast<UImage>(WidgetToConfigure))
+        {
+            // 这里可以设置图片的资源
+            // Image->SetBrushFromTexture(...);
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("Slider"), ESearchCase::IgnoreCase))
+    {
+        if (USlider* Slider = Cast<USlider>(WidgetToConfigure))
+        {
+            // 设置滑块的默认值或样式
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("EditableTextBox"), ESearchCase::IgnoreCase))
+    {
+        if (UEditableTextBox* EditableTextBox = Cast<UEditableTextBox>(WidgetToConfigure))
+        {
+            EditableTextBox->SetHintText(FText::FromString(Node->ControlName));
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("Toogle"), ESearchCase::IgnoreCase))
+    {
+        if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure))
+        {
+            // 设置复选框的默认状态或样式
+        }
+    }
+    else if (Node->ControlType.Contains(TEXT("Common"), ESearchCase::IgnoreCase))
+    {
+        // Common类型可以是一个占位符，可能需要特殊处理
+        // 这里可以添加一些通用的处理逻辑
+    }
+    else if (Node->ControlType.Contains(TEXT("PSDTestAtlas"), ESearchCase::IgnoreCase))
+    {
+        // 处理PSDTestAtlas类型的特殊逻辑
+        // 这里可以添加一些特定的处理逻辑
+    }
+    else
     {
         if (UPanelWidget* Panel = Cast<UPanelWidget>(WidgetToConfigure))
         {
@@ -400,6 +452,60 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
             }
         }
     }
+
+//     bool bChildrenAreConsumed = false;
+// 
+//     // --- Special Handling for Composite Widgets ---
+// 
+//     if (UButton* Button = Cast<UButton>(WidgetToConfigure))
+//     {
+//         // A button consumes its children to set style and content.
+//         for (PanelContext* ChildNode : Node->Children)
+//         {
+//             FString ChildName = ChildNode->ControlName;
+//             FString ChildType = ChildNode->ControlType;
+//            // ParseLayerName(ChildNode->ControlName, ChildName, ChildType, ChildParams);
+// 
+//             // Example: Find the text layer and set it as the button's content.
+//             // You can check for "Title" or a specific type like "Text".
+//             if (ChildName.Equals(TEXT("Title")))
+//             {
+//                 UWidget* ContentWidget = CreateWidgetRecursive(WBP, Button, ChildNode);
+//                 // The recursive call will automatically use Button->SetContent.
+//             }
+//             // Example: Find the image layer and set it as the button's style.
+//             else if (ChildType.Equals(TEXT("PSDTestAtlas")) || ChildType.Equals(TEXT("Texture")))
+//             {
+//                 // This is where you would load the texture/material from the atlas info
+//                 // and apply it to the button's style (e.g., Button->WidgetStyle.Normal.SetResourceObject(...)).
+//                 // For now, we'll just create the image as a placeholder.
+//                 CreateWidgetRecursive(WBP, Button, ChildNode);
+//             }
+//         }
+//         bChildrenAreConsumed = true;
+//     }
+//     else if (USlider* Slider = Cast<USlider>(WidgetToConfigure))
+//     {
+//         // A slider consumes children like _Handle, _Fill, _Bg to configure its appearance.
+//         // This requires more detailed logic to find the specific child layers and apply their
+//         // properties (like images) to the slider's style properties.
+//         bChildrenAreConsumed = true;
+//     }
+//     // Add more handlers for other composite types (Toggle, InputField, etc.) here.
+//     // else if (UCheckBox* CheckBox = Cast<UCheckBox>(WidgetToConfigure)) { ... }
+// 
+// 
+//     // --- Default Handling for Generic Panels ---
+//     if (!bChildrenAreConsumed)
+//     {
+//         if (UPanelWidget* Panel = Cast<UPanelWidget>(WidgetToConfigure))
+//         {
+//             for (PanelContext* ChildNode : Node->Children)
+//             {
+//                 CreateWidgetRecursive(WBP, Panel, ChildNode);
+//             }
+//         }
+//     }
 }
 // --- Utility Functions ---
 void FGenerateUMGHelper::ParseLayerName(const FString& FullName, FString& OutName, FString& OutType, FString& OutParams)
