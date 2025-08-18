@@ -626,6 +626,8 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
             std::optional<UIElement> Element = ParseUIElement(utf8_string);
             if (Element.has_value())
             {
+
+                context->Element = Element;
                 context->ControlName = UTF8_TO_TCHAR(Element->name.c_str());
                 context->ControlType = UTF8_TO_TCHAR(Element->type.c_str());
                 if (Element->params.contains("fullscreen"))
@@ -665,6 +667,7 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
             std::optional<UIElement> Element = ParseUIElement(layer->name.c_str());
             if (Element.has_value())
             {
+                context->Element = Element;
                 context->ControlName = UTF8_TO_TCHAR(Element->name.c_str());
                 context->ControlType = UTF8_TO_TCHAR(Element->type.c_str());
                 if (Element->params.contains("fullscreen"))

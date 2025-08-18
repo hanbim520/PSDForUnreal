@@ -57,6 +57,22 @@ struct PanelContext;
 struct Layer;
 class Allocator;
 
+
+using ParamValue = std::variant<int, std::string, bool>;
+using Params = std::map<std::string, ParamValue>;
+struct UIElement {
+    std::string name;
+    std::string type;
+    nlohmann::json params;
+
+    // 安全获取参数的通用方法
+//     template<typename T>
+//     std::optional<T> get(const std::string& key) const {
+//         if (!params.contains(key)) return std::nullopt;
+//         return safe_converter<T>::convert(params[key]);
+//     }
+};
+
 static const unsigned int CHANNEL_NOT_FOUND = UINT_MAX;
 /**
  * @struct PanelContext
@@ -87,6 +103,8 @@ struct PanelContext
 
     /** @brief 子控件的列表 (A list of child controls) */
     std::vector<PanelContext*> Children;
+
+    std::optional<struct UIElement> Element;
 
     // Default constructor to initialize pointers and arrays
     PanelContext()
@@ -279,20 +297,6 @@ struct PanelContext
     }
 };
 
-using ParamValue = std::variant<int, std::string, bool>;
-using Params = std::map<std::string, ParamValue>;
-struct UIElement {
-    std::string name;
-    std::string type;
-    nlohmann::json params;
-
-    // 安全获取参数的通用方法
-//     template<typename T>
-//     std::optional<T> get(const std::string& key) const {
-//         if (!params.contains(key)) return std::nullopt;
-//         return safe_converter<T>::convert(params[key]);
-//     }
-};
 
 /**
  * 
