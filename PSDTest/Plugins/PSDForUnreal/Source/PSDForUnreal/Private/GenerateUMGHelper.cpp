@@ -396,10 +396,7 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
     }
     else if (Node->ControlType.Equals(TEXT("Text"), ESearchCase::IgnoreCase))
     {
-        if (UTextBlock* TextBlock = Cast<UTextBlock>(WidgetToConfigure))
-        {
-            TextBlock->SetText(FText::FromString(Node->ControlName));
-        }
+        SetTextBlock(WBP, WidgetToConfigure, Node);
     }
     else if (Node->ControlType.Equals(TEXT("Slider"), ESearchCase::IgnoreCase))
     {
@@ -582,5 +579,20 @@ void FGenerateUMGHelper::SetImageOrTextInfo(UWidgetBlueprint* WBP, UWidget* Widg
     else if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
     {
         TextBlock->SetText(FText::FromString(Node->ControlName));
+    }
+}
+
+void FGenerateUMGHelper::SetTextBlock(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node)
+{
+    if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
+    {
+        TextBlock->SetText(FText::FromString(Node->ControlName));
+        // 可以设置其他文本属性，如字体、颜色等
+        // TextBlock->SetFont(...);
+        // TextBlock->SetColorAndOpacity(...);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Widget is not a TextBlock: %s"), *Node->ControlName);
     }
 }
