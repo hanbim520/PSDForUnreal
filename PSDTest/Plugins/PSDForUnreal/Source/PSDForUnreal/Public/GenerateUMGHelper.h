@@ -24,6 +24,9 @@ public:
 	TSubclassOf<UObject> GetBPGeneratedClass(UBlueprint* BPObject);
 	void SetWidgetCenterAlignment(UWidget* Widget, PanelContext* Info);
 
+	PanelContext* GetControlInfo(PanelContext* Self);
+
+	
 public:
 	UWidgetBlueprint* GenerateUMGFromHierarchy(const FString& AssetPath, PanelContext* RootNode);
 	UWidget* CreateWidgetRecursive(UWidgetBlueprint* WBP, class UPanelWidget* ParentWidget, PanelContext* Node);

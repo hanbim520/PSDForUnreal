@@ -55,7 +55,8 @@ public class PSDForUnreal : ModuleRules
                 "LevelEditor",
                 "AssetRegistry",
                 "InteractiveToolsFramework",
-				"EditorInteractiveToolsFramework"
+				"EditorInteractiveToolsFramework",
+                "ImageWrapper"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

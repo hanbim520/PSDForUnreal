@@ -82,7 +82,7 @@ struct PanelContext
     int Left, Top, Right, Bottom;
 
     bool bIsFullScreen = false;
-    FVector2D Size = FVector2D(0.0f, 0.0f);
+   /* FVector2D Size = FVector2D(0.0f, 0.0f);*/
 
     /** @brief 子控件的列表 (A list of child controls) */
     std::vector<PanelContext*> Children;
@@ -120,6 +120,19 @@ struct PanelContext
         return Bottom - Top;
     }
 
+    FVector2D Size() 
+    {
+        PanelContext* ContextInfo = FindFirstChildWithControlInfo();
+        if (ContextInfo)
+        {
+            return FVector2D(ContextInfo->Width(), ContextInfo->Height());
+        }
+        else
+        {
+            return FVector2D(Width(), Height());
+        }
+    }
+
     PanelContext* FindFirstChildOfType(const FString& TypeFilter) const {
         for (PanelContext* child : Children) {
             if (child->ControlType.Equals(TypeFilter, ESearchCase::IgnoreCase)) {
@@ -137,6 +150,45 @@ struct PanelContext
             }
         }
         return result;
+    }
+
+
+    std::vector<PanelContext*> FindChildrenWithControlInfo() const
+    {
+        std::vector<PanelContext*> result;
+
+        // 遍历所有子控件
+        for (PanelContext* child : Children)
+        {
+            // 检查控件名称是否包含"ControlInfo"（不区分大小写）
+            if (child->ControlName.Contains(TEXT("ControlInfo"), ESearchCase::IgnoreCase))
+            {
+                result.push_back(child);
+            }
+        }
+
+        return result;
+    }
+
+    PanelContext* FindFirstChildWithControlInfo() const
+    {
+        // 遍历所有子控件
+        for (PanelContext* child : Children)
+        {
+            // 检查控件名称是否包含"ControlInfo"（不区分大小写）
+            if (child->ControlName.Contains(TEXT("ControlInfo"), ESearchCase::IgnoreCase))
+            {
+                return child;
+            }
+        }
+
+        return nullptr;
+    }
+
+    bool IsControlInfo() const
+    {
+        // 检查控件名称是否包含"ControlInfo"（不区分大小写）
+        return ControlName.Contains(TEXT("ControlInfo"), ESearchCase::IgnoreCase);
     }
 
     FVector2D ConvertPsdToUnreal(
@@ -177,11 +229,22 @@ struct PanelContext
         const FVector2D& ParentPos
     )
     {
-        // 1. 计算UI元素在PSD中的实际位置和尺寸（PSD是左上原点坐标系）
-        FVector2D PSD_Position(static_cast<float>(Left), static_cast<float>(Top));
-        FVector2D WidgetSize(static_cast<float>(Right - Left), static_cast<float>(Bottom - Top));
-        FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
-        return ChildUnrealPosition - ParentPos;
+        PanelContext* ControlInfo = FindFirstChildWithControlInfo();
+        if (!ControlInfo)
+        {
+            FVector2D PSD_Position(static_cast<float>(Left), static_cast<float>(Top));
+            FVector2D WidgetSize(static_cast<float>(Right - Left), static_cast<float>(Bottom - Top));
+            FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
+            return ChildUnrealPosition - ParentPos;
+        }
+        else
+        {
+            FVector2D PSD_Position(static_cast<float>(ControlInfo->Left), static_cast<float>(ControlInfo->Top));
+            FVector2D WidgetSize(static_cast<float>(ControlInfo->Right - ControlInfo->Left), static_cast<float>(ControlInfo->Bottom - ControlInfo->Top));
+            FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
+            return ChildUnrealPosition - ParentPos;
+        }
+       
     }
 
     FVector2D GetSelfUMGPosition()
@@ -195,11 +258,23 @@ struct PanelContext
         {
             ParentPos = Parent->GetSelfUMGPosition();
         }
-        // 1. 计算UI元素在PSD中的实际位置和尺寸（PSD是左上原点坐标系）
-        FVector2D PSD_Position(static_cast<float>(Left), static_cast<float>(Top));
-        FVector2D WidgetSize(Size);
-        FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
-        return ChildUnrealPosition - ParentPos;
+
+        PanelContext* ControlInfo = FindFirstChildWithControlInfo();
+        if (!ControlInfo)
+        {
+            FVector2D PSD_Position(static_cast<float>(Left), static_cast<float>(Top));
+            FVector2D WidgetSize(static_cast<float>(Right - Left), static_cast<float>(Bottom - Top));
+            FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
+            return ChildUnrealPosition - ParentPos;
+        }
+        else
+        {
+            FVector2D PSD_Position(static_cast<float>(ControlInfo->Left), static_cast<float>(ControlInfo->Top));
+            FVector2D WidgetSize(static_cast<float>(ControlInfo->Right - ControlInfo->Left), static_cast<float>(ControlInfo->Bottom - ControlInfo->Top));
+            FVector2D ChildUnrealPosition = ConvertPsdToUnreal(PSD_Position, WidgetSize);
+            return ChildUnrealPosition - ParentPos;
+        }
+       
     }
 };
 
@@ -335,8 +410,11 @@ public:
         return rootNodes;
     }
 
+   
+    void  SavePNG_Unreal(const FString& FilePath, int32 Width, int32 Height, int32 Channels, const uint8_t* Data);
+
 private:
-    bool bGeneratedPNG = false;
+    bool bGeneratedPNG = true;
 
     std::vector<PanelContext*> rootNodes;
     std::map<PSD_NAMESPACE_NAME::Layer*, PanelContext*> nodeMap;

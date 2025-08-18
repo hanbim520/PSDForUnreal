@@ -35,7 +35,9 @@
 
 #include "PsdTgaExporter.h"
 #include "PsdDebug.h"
-
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Misc/FileHelper.h"
 
 PSD_PUSH_WARNING_LEVEL(0)
 // disable annoying warning caused by xlocale(337): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
@@ -44,6 +46,7 @@ PSD_PUSH_WARNING_LEVEL(0)
 #include <sstream>
 #include <functional>
 #include <iostream>
+
 PSD_POP_WARNING_LEVEL
 
 
@@ -56,10 +59,60 @@ FPSDHelper::~FPSDHelper()
 }
 std::wstring FPSDHelper::GetSampleOutputPath(void)
 {
-    // TODO: add support for other platforms
-//#ifdef _WIN32
-    return L"../../bin/";
-    //#endif
+   return L"";
+}
+
+void FPSDHelper::SavePNG_Unreal(const FString& FilePath, int32 Width, int32 Height, int32 Channels, const uint8_t* Data)
+{
+    // 获取 IImageWrapper 模块
+    IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+
+    // 创建 PNG 包装器
+    TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
+    if (!ImageWrapper.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create PNG image wrapper."));
+        return;
+    }
+
+    // 设置图像数据（Unreal 要求 RGBA 格式）
+    if (Channels == 4)
+    {
+        ImageWrapper->SetRaw(Data, Width * Height * Channels, Width, Height, ERGBFormat::RGBA, 8);
+    }
+    else if (Channels == 3)
+    {
+        // 如果输入是 RGB，需要手动转换为 RGBA
+        TArray<uint8> RGBA_Data;
+        RGBA_Data.AddUninitialized(Width * Height * 4);
+        for (int32 i = 0; i < Width * Height; i++)
+        {
+            RGBA_Data[i * 4 + 0] = Data[i * 3 + 0]; // R
+            RGBA_Data[i * 4 + 1] = Data[i * 3 + 1]; // G
+            RGBA_Data[i * 4 + 2] = Data[i * 3 + 2]; // B
+            RGBA_Data[i * 4 + 3] = 255;             // A (不透明)
+        }
+        ImageWrapper->SetRaw(RGBA_Data.GetData(), Width * Height * 4, Width, Height, ERGBFormat::RGBA, 8);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Unsupported number of channels: %d"), Channels);
+        return;
+    }
+
+    // 获取 PNG 压缩后的数据
+    const TArray64<uint8>& PNG_Data = ImageWrapper->GetCompressed();
+    if (PNG_Data.Num() == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to compress PNG data."));
+        return;
+    }
+
+    // 写入文件
+    if (!FFileHelper::SaveArrayToFile(PNG_Data, *FilePath))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to save PNG to: %s"), *FilePath);
+    }
 }
 
 bool FPSDHelper::ResolvePSD(FString InPsdPath)
@@ -147,6 +200,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
             {
                 continue; // Skip layer processing if PNG generation is not enabled
             }
+          
 
             // note that channel data is only as big as the layer it belongs to, e.g. it can be smaller or bigger than the canvas,
             // depending on where it is positioned. therefore, we use the provided utility functions to expand/shrink the channel data
@@ -267,6 +321,12 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
                 context->ControlName = UTF8_TO_TCHAR(layer->name.c_str());
             }
 
+            FString UnrealLayerName = FString(layerName.str().c_str());
+            if (UnrealLayerName.Contains(TEXT("ControlInfo"), ESearchCase::IgnoreCase) || UnrealLayerName.Contains(TEXT("Font"), ESearchCase::IgnoreCase))
+            {
+                continue;
+            }
+            
             // at this point, image8, image16 or image32 store either a 8-bit, 16-bit, or 32-bit image, respectively.
             // the image data is stored in interleaved RGB or RGBA, and has the size "document->width*document->height".
             // it is up to you to do whatever you want with the image data. in the sample, we simply write the image to a .TGA file.
@@ -293,12 +353,14 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
                     filename << L".tga";
                     tgaExporter::SaveRGBA(filename.str().c_str(), layerWidth, layerHeight, image8);
 
-                    std::wstringstream filenamePng;
-                    filenamePng << GetSampleOutputPath();
-                    filenamePng << L"layer";
-                    filenamePng << layerName.str();
-                    filenamePng << L".png";
-                    tgaExporter::SavePNG(filenamePng.str().c_str(), layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
+//                     std::wstringstream filenamePng;
+//                     filenamePng << GetSampleOutputPath();
+//                     filenamePng << L"layer";
+//                     filenamePng << layerName.str();
+//                     filenamePng << L".png";
+
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
                 }
             }
 
@@ -529,7 +591,6 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
             std::string utf8_string = converter.to_bytes(utf16_ptr);
             context->ControlName = FString(utf8_string.c_str()); // Assuming Unreal's FString
 
-
             std::optional<UIElement> Element = ParseUIElement(utf8_string);
             if (Element.has_value())
             {
@@ -542,21 +603,21 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
                 else
                 {
                     context->bIsFullScreen = false;
-                    if (Element->params.contains("size") && Element->params["size"].is_array())
-                    {
-                        const auto& size_array = Element->params["size"];
-                        if (size_array.size() != 2) 
-                        {
-                            UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size only set one"));
-                            return ;
-                        }
-                        context->Size = FVector2D(size_array[0], size_array[1]);
-                    }
-                    else
-                    {
-                        context->Size = FVector2D(200,100);
-                        UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size is (0,0)"));
-                    }
+//                     if (Element->params.contains("size") && Element->params["size"].is_array())
+//                     {
+//                         const auto& size_array = Element->params["size"];
+//                         if (size_array.size() != 2) 
+//                         {
+//                             UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size only set one"));
+//                             return ;
+//                         }
+//                         context->Size = FVector2D(size_array[0], size_array[1]);
+//                     }
+//                     else
+//                     {
+//                         context->Size = FVector2D(200,100);
+//                         UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size is (0,0)"));
+//                     }
                 }
                
             }
@@ -580,21 +641,21 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
                 }
                 else
                 {
-                    context->bIsFullScreen = false;
-                    if (Element->params.contains("size") && Element->params["size"].is_array())
-                    {
-                        const auto& size_array = Element->params["size"];
-                        if (size_array.size() != 2)
-                        {
-                            UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size only set one"));
-                            return;
-                        }
-                        context->Size = FVector2D(size_array[0], size_array[1]);
-                    }
-                    else
-                    {
-                        UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size is (0,0)"));
-                    }
+//                     context->bIsFullScreen = false;
+//                     if (Element->params.contains("size") && Element->params["size"].is_array())
+//                     {
+//                         const auto& size_array = Element->params["size"];
+//                         if (size_array.size() != 2)
+//                         {
+//                             UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size only set one"));
+//                             return;
+//                         }
+//                         context->Size = FVector2D(size_array[0], size_array[1]);
+//                     }
+//                     else
+//                     {
+//                         UE_LOG(LogTemp, Error, TEXT("UMG control size error ,size is (0,0)"));
+//                     }
                 }
 
             }
@@ -637,9 +698,9 @@ void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMa
             parentNode->Children.push_back(currentNode);
         }
 
-        if (currentNode->ControlType.Equals(TEXT("Button"), ESearchCase::IgnoreCase)) {
-            ProcessButtonTextures(currentNode);
-        }
+//         if (currentNode->ControlType.Equals(TEXT("Button"), ESearchCase::IgnoreCase)) {
+//             ProcessButtonTextures(currentNode);
+//         }
     }
 
     std::function<void(PanelContext*, int)> printHierarchy =
@@ -686,35 +747,64 @@ void FPSDHelper::ProcessButtonTextures(PanelContext* RootNode)
 
 std::optional<UIElement> FPSDHelper::ParseUIElement(const std::string& input)
 {
-    // 查找分隔符位置
+    // 1. 查找必须存在的分隔符 '@'
     size_t at_pos = input.find('@');
-    size_t colon_pos = input.find(':', at_pos);
 
-    // 验证基本格式
-    if (at_pos == std::string::npos ||
-        colon_pos == std::string::npos ||
-        colon_pos <= at_pos + 1) {
+    // 如果没有找到 '@'，则格式无效
+    if (at_pos == std::string::npos) {
         return std::nullopt;
     }
 
     try {
         UIElement element;
 
-        // 提取名称和类型
+        // 2. 提取名称 (从开头到 '@')
         element.name = input.substr(0, at_pos);
-        element.type = input.substr(at_pos + 1, colon_pos - at_pos - 1);
 
-        // 解析JSON参数（不立即转换类型）
-        std::string json_str = input.substr(colon_pos + 1);
-        element.params = nlohmann::json::parse(json_str);
+        // 3. 查找可选的分隔符 ':'，注意从 '@' 之后开始查找
+        size_t colon_pos = input.find(':', at_pos + 1);
+
+        if (colon_pos == std::string::npos) {
+            // 4a. 如果没有找到 ':'，则 '@' 之后的所有内容都作为类型
+            element.type = input.substr(at_pos + 1);
+            // JSON 参数视为空对象
+            element.params = nlohmann::json::object();
+        }
+        else {
+            // 4b. 如果找到了 ':'
+            // 验证类型是否为空 (例如 "name@:{}")
+            if (colon_pos <= at_pos + 1) {
+                return std::nullopt; // 类型不能为空
+            }
+            // 提取类型 (从 '@' 和 ':' 之间)
+            element.type = input.substr(at_pos + 1, colon_pos - at_pos - 1);
+
+            // 提取 ':' 之后的 JSON 字符串
+            std::string json_str = input.substr(colon_pos + 1);
+
+            // 如果 JSON 字符串不为空则解析，否则视为空对象
+            if (!json_str.empty()) {
+                element.params = nlohmann::json::parse(json_str);
+            }
+            else {
+                element.params = nlohmann::json::object();
+            }
+        }
 
         return element;
     }
-    catch (const  nlohmann::json::parse_error& e) {
+    catch (const nlohmann::json::parse_error& e) {
+        // JSON 解析失败
         std::cerr << "JSON parse error: " << e.what() << "\n";
         return std::nullopt;
     }
+    catch (const std::out_of_range& e) {
+        // 字符串截取越界，通常在格式错误时发生
+        std::cerr << "String parsing error: " << e.what() << "\n";
+        return std::nullopt;
+    }
     catch (...) {
+        // 捕获其他未知异常
         std::cerr << "Unknown error occurred\n";
         return std::nullopt;
     }

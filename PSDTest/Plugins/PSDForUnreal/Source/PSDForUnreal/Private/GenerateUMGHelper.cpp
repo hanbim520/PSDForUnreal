@@ -210,7 +210,7 @@ void FGenerateUMGHelper::SetWidgetCenterAlignment(UWidget* Widget, PanelContext*
         }
         else
         {
-            Slot->SetSize(Info->Size);
+            Slot->SetSize(Info->Size());
 
 //             if (Info->Parent == nullptr )
 //             {
@@ -267,6 +267,12 @@ UWidgetBlueprint* FGenerateUMGHelper::GenerateUMGFromHierarchy(const FString& As
     // 3. Start the recursive process. The children of the root PSD node will be added to our RootCanvas.
     for (PanelContext* ChildNode : RootNode->Children)
     {
+        if (ChildNode->IsControlInfo())
+        {
+            // Skip ControlInfo nodes, they are not actual UI elements.
+            continue;
+        }
+
         UWidget* Widget = CreateWidgetRecursive(WBP, RootAlignCanvas, ChildNode);
         SetWidgetCenterAlignment(Widget, ChildNode); // Center align the widget if needed
     }
@@ -317,7 +323,7 @@ UWidget* FGenerateUMGHelper::CreateWidgetRecursive(UWidgetBlueprint* WBP, UPanel
             CanvasSlot->LayoutData = AnchorData;
 
             const FVector2D Position = Node->GetSelfUMGPosition();
-            const FVector2D Size = Node->Size;
+            const FVector2D Size = Node->Size();
             CanvasSlot->SetPosition(Position);
             CanvasSlot->SetSize(Size);
             UTextBlock* TextBlock = Cast<UTextBlock>(NewWidget);
@@ -441,4 +447,14 @@ UClass* FGenerateUMGHelper::GetUMGClassFromString(const FString& TypeString)
         return FindObject<UClass>(nullptr, **ClassPath);
     }
     return nullptr;
+}
+
+PanelContext* FGenerateUMGHelper::GetControlInfo(PanelContext* Self)
+{
+    if (!Self)
+    {
+        return nullptr;
+    }
+
+    return  Self->FindFirstChildWithControlInfo();
 }

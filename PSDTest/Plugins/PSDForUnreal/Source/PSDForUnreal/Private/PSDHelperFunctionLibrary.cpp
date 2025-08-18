@@ -10,7 +10,7 @@ void UPSDHelperFunctionLibrary::ConvertPSDToUMG()
 {
     FPSDHelper* PSDHelper = new FPSDHelper();
 
-    PSDHelper->ResolvePSD(TEXT("H:/Work/psd_sdk/bin/Sample.psd"));
+    PSDHelper->ResolvePSD(TEXT("E:/PSDForUnreal/psd/Sample.psd"));
 
 
     FGenerateUMGHelper Helper;
