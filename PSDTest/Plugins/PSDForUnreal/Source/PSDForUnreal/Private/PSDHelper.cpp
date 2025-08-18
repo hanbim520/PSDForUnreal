@@ -335,24 +335,26 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
             {
                 if (document->bitsPerChannel == 8u)
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"layer";
-                    filename << layerName.str();
-                    filename << L".tga";
-                    tgaExporter::SaveRGB(filename.str().c_str(), layerWidth, layerHeight, image8);
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"layer";
+//                     filename << layerName.str();
+//                     filename << L".tga";
+//                     tgaExporter::SaveRGB(filename.str().c_str(), layerWidth, layerHeight, image8);
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
                 }
             }
             else if (channelCount == 4u)
             {
                 if (document->bitsPerChannel == 8u)
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"layer";
-                    filename << layerName.str();
-                    filename << L".tga";
-                    tgaExporter::SaveRGBA(filename.str().c_str(), layerWidth, layerHeight, image8);
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"layer";
+//                     filename << layerName.str();
+//                     filename << L".tga";
+//                     tgaExporter::SaveRGBA(filename.str().c_str(), layerWidth, layerHeight, image8);
 
 //                     std::wstringstream filenamePng;
 //                     filenamePng << GetSampleOutputPath();
@@ -381,23 +383,29 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
                 // the mask data is always single-channel (monochrome), and has a width and height as calculated above.
                 void* maskData = layer->layerMask->data;
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"layer";
-                    filename << layerName.str();
-                    filename << L"_usermask.tga";
-                    tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"layer";
+//                     filename << layerName.str();
+//                     filename << L"_usermask.tga";
+//                     tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
+
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskData);
+
                 }
 
                 // use ExpandMaskToCanvas create an image that is the same size as the canvas.
                 void* maskCanvasData = ExpandMaskToCanvas(document, &allocator, layer->layerMask);
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"canvas";
-                    filename << layerName.str();
-                    filename << L"_usermask.tga";
-                    tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"canvas";
+//                     filename << layerName.str();
+//                     filename << L"_usermask.tga";
+//                     tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskCanvasData);
                 }
 
                 allocator.Free(maskCanvasData);
@@ -411,22 +419,27 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 
                 void* maskData = layer->vectorMask->data;
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"layer";
-                    filename << layerName.str();
-                    filename << L"_vectormask.tga";
-                    tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"layer";
+//                     filename << layerName.str();
+//                     filename << L"_vectormask.tga";
+//                     tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskData);
                 }
 
                 void* maskCanvasData = ExpandMaskToCanvas(document, &allocator, layer->vectorMask);
                 {
-                    std::wstringstream filename;
-                    filename << GetSampleOutputPath();
-                    filename << L"canvas";
-                    filename << layerName.str();
-                    filename << L"_vectormask.tga";
-                    tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
+//                     std::wstringstream filename;
+//                     filename << GetSampleOutputPath();
+//                     filename << L"canvas";
+//                     filename << layerName.str();
+//                     filename << L"_vectormask.tga";
+//                     tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
+
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskCanvasData);
                 }
 
                 allocator.Free(maskCanvasData);
