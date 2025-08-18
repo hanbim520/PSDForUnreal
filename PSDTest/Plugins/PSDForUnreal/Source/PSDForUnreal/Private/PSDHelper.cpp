@@ -117,7 +117,8 @@ void FPSDHelper::SavePNG_Unreal(const FString& FilePath, int32 Width, int32 Heig
 
 bool FPSDHelper::ResolvePSD(FString InPsdPath)
 {   
-  
+
+    FileName = FPaths::GetBaseFilename(InPsdPath);
 
     const std::string srcPathAnsi = TCHAR_TO_UTF8(*InPsdPath);
     const std::wstring srcPath = string_to_wstring(srcPathAnsi);
@@ -359,7 +360,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filenamePng << layerName.str();
 //                     filenamePng << L".png";
 
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName/ FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
                 }
             }
