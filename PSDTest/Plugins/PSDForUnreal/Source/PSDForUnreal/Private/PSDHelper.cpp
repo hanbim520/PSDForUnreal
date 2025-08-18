@@ -341,7 +341,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filename << layerName.str();
 //                     filename << L".tga";
 //                     tgaExporter::SaveRGB(filename.str().c_str(), layerWidth, layerHeight, image8);
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath() / FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
                 }
             }
@@ -362,7 +362,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filenamePng << layerName.str();
 //                     filenamePng << L".png";
 
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName/ FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath()/ FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)image8);
                 }
             }
@@ -390,7 +390,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filename << L"_usermask.tga";
 //                     tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
 
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath() / FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskData);
 
                 }
@@ -404,7 +404,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filename << layerName.str();
 //                     filename << L"_usermask.tga";
 //                     tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath() / FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskCanvasData);
                 }
 
@@ -425,7 +425,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filename << layerName.str();
 //                     filename << L"_vectormask.tga";
 //                     tgaExporter::SaveMonochrome(filename.str().c_str(), width, height, static_cast<const uint8_t*>(maskData));
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath() / FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskData);
                 }
 
@@ -438,7 +438,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 //                     filename << L"_vectormask.tga";
 //                     tgaExporter::SaveMonochrome(filename.str().c_str(), layerWidth, layerHeight, static_cast<const uint8_t*>(maskCanvasData));
 
-                    FString UnrealFilePath = FPaths::ProjectContentDir() / TEXT("UI") / FileName / FString(layerName.str().c_str()) + TEXT(".png");
+                    FString UnrealFilePath = GetPSDTexturePath() / FString(layerName.str().c_str()) + TEXT(".png");
                     SavePNG_Unreal(UnrealFilePath, layerWidth, layerHeight, channelCount, (const uint8_t*)maskCanvasData);
                 }
 
@@ -453,6 +453,7 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
     // alpha channels. this is only available when saving the document with "Maximize Compatibility" turned on.
     if (document->imageDataSection.length != 0)
     {
+        unsigned int channelCount = 0u;
         PSD_NAMESPACE_NAME::ImageDataSection* imageData = ParseImageDataSection(document, &file, &allocator);
         if (imageData)
         {
@@ -477,12 +478,14 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
                     // we have 4 or more images/channels, and a transparency mask.
                     // this means that images 0-3 are RGBA, respectively.
                     isRgb = false;
+                    channelCount = 3;
                 }
                 else
                 {
                     // we have 4 or more images stored in the document, but none of them is the transparency mask.
                     // this means we are dealing with RGB (!) data, and several additional alpha channels.
                     isRgb = true;
+                    channelCount = 4;
                 }
             }
 
@@ -527,14 +530,18 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
                 std::wstringstream filename;
                 filename << GetSampleOutputPath();
                 filename << L"merged.tga";
-                if (isRgb)
-                {
-                    tgaExporter::SaveRGB(filename.str().c_str(), document->width, document->height, image8);
-                }
-                else
-                {
-                    tgaExporter::SaveRGBA(filename.str().c_str(), document->width, document->height, image8);
-                }
+//                 if (isRgb)
+//                 {
+//                     tgaExporter::SaveRGB(filename.str().c_str(), document->width, document->height, image8);
+//                 }
+//                 else
+//                 {
+//                     tgaExporter::SaveRGBA(filename.str().c_str(), document->width, document->height, image8);
+//                 }
+
+
+                FString UnrealFilePath = GetPSDTexturePath() / FString("merged") + TEXT(".png");
+                SavePNG_Unreal(UnrealFilePath, document->width, document->height, channelCount, (const uint8_t*)image8);
             }
 
             allocator.Free(image8);
@@ -556,13 +563,24 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
 
                     if (document->bitsPerChannel == 8)
                     {
-                        std::wstringstream filename;
-                        filename << GetSampleOutputPath();
-                        filename << L"extra_channel_";
-                        filename << channel->asciiName.c_str();
-                        filename << L".tga";
+//                         std::wstringstream filename;
+//                         filename << GetSampleOutputPath();
+//                         filename << L"extra_channel_";
+//                         filename << channel->asciiName.c_str();
+//                         filename << L".tga";
+// 
+//                         tgaExporter::SaveMonochrome(filename.str().c_str(), document->width, document->height, static_cast<const uint8_t*>(imageData->images[i + skipImageCount].data));
 
-                        tgaExporter::SaveMonochrome(filename.str().c_str(), document->width, document->height, static_cast<const uint8_t*>(imageData->images[i + skipImageCount].data));
+                        if (channel->mode == PSD_NAMESPACE_NAME::AlphaChannel::Mode::ALPHA)
+                        {
+                            channelCount = 4;
+                        }
+                        else
+                        {
+                            channelCount = 3;
+                        }
+                        FString UnrealFilePath = GetPSDTexturePath() / FString::Printf(TEXT("extra_channel_%s"),UTF8_TO_TCHAR(channel->asciiName.c_str())) + TEXT(".png");
+                        SavePNG_Unreal(UnrealFilePath, document->width, document->height, channelCount, (const uint8_t*)image8);
                     }
                 }
 
