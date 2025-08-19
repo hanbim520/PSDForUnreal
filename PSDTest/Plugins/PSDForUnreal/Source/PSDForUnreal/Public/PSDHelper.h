@@ -422,6 +422,9 @@ public:
         return FPaths::ProjectContentDir() / TEXT("UI") / FileName;
     }
 
+
+    void ReimportAllAssets(const FString& FilePath);
+
 private:
     bool bGeneratedPNG = true;
 

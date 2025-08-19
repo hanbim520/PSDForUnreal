@@ -38,6 +38,15 @@
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "Misc/FileHelper.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "EditorReimportHandler.h"
+
+
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
+#include "ObjectTools.h" // 如果需要导入特定类型（如纹理），可能需要这个
+#include "Factories/Factory.h" // UFactory的基类
+ 
 
 PSD_PUSH_WARNING_LEVEL(0)
 // disable annoying warning caused by xlocale(337): warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
@@ -46,9 +55,104 @@ PSD_PUSH_WARNING_LEVEL(0)
 #include <sstream>
 #include <functional>
 #include <iostream>
+#include "../../../../../../../Source/Editor/UnrealEd/Public/AssetImportTask.h"
 
 PSD_POP_WARNING_LEVEL
 
+
+class FMyAssetTools
+{
+public:
+#if WITH_EDITOR
+    /**
+    * @brief [简单] 自动导入一个资产到内容浏览器。
+    * @param SourceAssetPath 要导入的源文件在硬盘上的绝对路径 (例如 "D:/MyTextures/T_Rock.png")
+    * @param GameDestinationPath 资产在游戏内容目录中的目标【文件夹】路径 (例如 "/Game/Textures/Rocks")
+    * @return 返回成功导入后创建的UObject对象，如果失败则返回nullptr
+    * @note 资产的名称将根据SourceAssetPath的文件名自动生成。例如 "T_Rock.png" 会生成名为 "T_Rock" 的资产。
+    */
+    static UObject* ImportAsset(const FString& SourceAssetPath, const FString& GameDestinationPath)
+    {
+        // --- 1. 检查输入参数是否有效 ---
+        if (!FPaths::FileExists(SourceAssetPath))
+        {
+            UE_LOG(LogTemp, Error, TEXT("无法导入资产：源文件不存在！路径: %s"), *SourceAssetPath);
+            return nullptr;
+        }
+
+        if (!GameDestinationPath.StartsWith(TEXT("/Game/")))
+        {
+            UE_LOG(LogTemp, Error, TEXT("无法导入资产：目标路径必须以 /Game/ 开头！路径: %s"), *GameDestinationPath);
+            return nullptr;
+        }
+
+        // --- 2. 加载AssetTools模块 ---
+        FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+        IAssetTools& AssetTools = AssetToolsModule.Get();
+
+        // --- 3. 设置导入任务 ---
+        TArray<FString> FilesToImport;
+        FilesToImport.Add(SourceAssetPath);
+
+        // ImportAssets会处理导入并返回创建的资产对象
+        TArray<UObject*> ImportedObjects = AssetTools.ImportAssets(FilesToImport, GameDestinationPath);
+
+        // --- 4. 检查导入结果 ---
+        if (ImportedObjects.Num() > 0 && ImportedObjects[0] != nullptr)
+        {
+            UE_LOG(LogTemp, Log, TEXT("资产导入成功！路径: %s"), *ImportedObjects[0]->GetPathName());
+            return ImportedObjects[0];
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("资产导入失败！源文件: %s"), *SourceAssetPath);
+            return nullptr;
+        }
+    }
+
+    /**
+     * @brief [高级] 使用FAssetImportTask进行更精细的控制，可以指定导入后的资产名称。
+     * @param SourceAssetPath 要导入的源文件在硬盘上的绝对路径。
+     * @param GameDestinationPath 资产在游戏内容目录中的目标【文件夹】路径。
+     * @param DestinationAssetName 导入后资产的【确切名称】。如果留空，则根据源文件名自动生成。
+     * @return 返回成功导入后创建的UObject对象，如果失败则返回nullptr
+     */
+    static UObject* ImportAssetWithTask(const FString& SourceAssetPath, const FString& GameDestinationPath, const FString& DestinationAssetName = TEXT(""))
+    {
+        FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+
+        // 创建一个导入任务
+        UAssetImportTask* ImportTask = NewObject<UAssetImportTask>();
+        ImportTask->bSave = true;                   // 导入后自动保存
+        ImportTask->bAutomated = true;              // 自动化模式，不弹出对话框
+        ImportTask->bReplaceExisting = true;        // 如果已存在同名资产，则覆盖
+        ImportTask->Filename = SourceAssetPath;     // 源文件路径
+        ImportTask->DestinationPath = GameDestinationPath; // 目标文件夹路径
+        ImportTask->DestinationName = DestinationAssetName; // 【重要】指定资产名称
+        // ImportTask->Factory = ...;               // 可以指定一个特定的Factory，通常留空自动选择
+        // ImportTask->Options = ...;               // 可以设置特定类型的导入选项（如FBX导入设置）
+
+        TArray<UAssetImportTask*> TasksToImport;
+        TasksToImport.Add(ImportTask);
+
+        // 执行导入
+        AssetToolsModule.Get().ImportAssetTasks(TasksToImport);
+
+        // 检查结果
+        if (ImportTask->Result.Num() > 0 && ImportTask->Result[0] != nullptr)
+        {
+            UObject* ImportedObject = Cast<UObject>(ImportTask->Result[0]);
+            UE_LOG(LogTemp, Log, TEXT("资产通过Task导入成功！路径: %s"), *ImportedObject->GetPathName());
+            return ImportedObject;
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("资产通过Task导入失败！源文件: %s"), *SourceAssetPath);
+            return nullptr;
+        }
+    }
+#endif
+};
 
 FPSDHelper::FPSDHelper()
 {
@@ -113,6 +217,7 @@ void FPSDHelper::SavePNG_Unreal(const FString& FilePath, int32 Width, int32 Heig
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to save PNG to: %s"), *FilePath);
     }
+    ReimportAllAssets(FilePath);
 }
 
 bool FPSDHelper::ResolvePSD(FString InPsdPath)
@@ -596,8 +701,24 @@ bool FPSDHelper::ResolvePSD(FString InPsdPath)
     file.Close();
 
 
+  
+
     return 0;
 
+}
+
+void FPSDHelper::ReimportAllAssets(const FString& FilePath)
+{
+    FString ContentDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+    FString GamePathWithFile = FilePath.Replace(*ContentDir, TEXT("/Game/"));
+
+    FString DestinationFolder = FPaths::GetPath(GamePathWithFile);
+    FString BaseFilename = FPaths::GetBaseFilename(FilePath);
+
+    FString SanitizedAssetName = ObjectTools::SanitizeObjectName(BaseFilename);
+
+    FMyAssetTools::ImportAssetWithTask(FilePath, DestinationFolder, SanitizedAssetName);
+    
 }
 
 void FPSDHelper::GenerateContext(PSD_NAMESPACE_NAME::LayerMaskSection* InLayerMaskSection)

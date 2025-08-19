@@ -56,7 +56,9 @@ public class PSDForUnreal : ModuleRules
                 "AssetRegistry",
                 "InteractiveToolsFramework",
 				"EditorInteractiveToolsFramework",
-                "ImageWrapper"
+                "ImageWrapper",
+                "Kismet",
+
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
