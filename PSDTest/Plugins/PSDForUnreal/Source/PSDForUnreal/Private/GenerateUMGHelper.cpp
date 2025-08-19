@@ -379,7 +379,11 @@ FString FGenerateUMGHelper::ConvertAbsolutePathToAssetPath(const FString& Absolu
 
 void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWidget* WidgetToConfigure, PanelContext* Node)
 {
-
+    if (!WBP || !WidgetToConfigure || !Node)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Invalid parameters for ConfigureWidgetFromChildren."));
+        return;
+    }
 
     if (Node->ControlType.Equals(TEXT("Button"), ESearchCase::IgnoreCase))
     {
@@ -396,7 +400,7 @@ void FGenerateUMGHelper::ConfigureWidgetFromChildren(UWidgetBlueprint* WBP, UWid
     }
     else if (Node->ControlType.Equals(TEXT("Text"), ESearchCase::IgnoreCase))
     {
-        SetTextBlock(WBP, WidgetToConfigure, Node);
+        SetTextBlockInfo(WBP, WidgetToConfigure, Node);
     }
     else if (Node->ControlType.Equals(TEXT("Slider"), ESearchCase::IgnoreCase))
     {
@@ -582,7 +586,7 @@ void FGenerateUMGHelper::SetImageOrTextInfo(UWidgetBlueprint* WBP, UWidget* Widg
     }
 }
 
-void FGenerateUMGHelper::SetTextBlock(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node)
+void FGenerateUMGHelper::SetTextBlockInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node)
 {
     if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
     {

@@ -50,7 +50,7 @@ public:
     //------------set control info------------
 	void SetButtonInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
     void SetImageOrTextInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
-	void SetTextBlock(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
+	void SetTextBlockInfo(UWidgetBlueprint* WBP, UWidget* Widget, PanelContext* Node);
 
 private:
 
