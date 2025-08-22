@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="main.js"></script> 
+    <link rel="stylesheet" href="style.css">   
+</head>
+<body>
+  <sp-heading>Params</sp-heading>
+  <sp-body id="layers">
+     <h3>动态属性面板</h3>
+
+        <div id="default-panel" class="panel">
+            <p>请选择一个带有特殊标识的图层 (@Type<span class="text-highlight">【Type对应UE的类型】</span>) 查看其属性。</p>
+        </div>
+
+        <div id="text-panel" class="panel hidden">
+            <h4>文本属性</h4>
+            <sp-field label="Size">
+                <sp-textfield placeholder="e.g., 16px"></sp-textfield>
+            </sp-field>
+            <sp-field label="Default Content">
+                <sp-textarea placeholder="输入默认文字"></sp-textarea>
+            </sp-field>
+        </div>
+
+        <div id="texture-panel" class="panel hidden">
+            <h4>纹理属性</h4>
+            <sp-field label="Size">
+                <sp-textfield placeholder="e.g., 256x256"></sp-textfield>
+            </sp-field>
+            <sp-field label="Default Image">
+                <button is="sp-button">选择默认图片</button>
+            </sp-field>
+        </div>
+  </sp-body>
+  <footer>
+    <sp-button id="btnPopulate">RenameLayer</sp-button>
+  </footer>
+</body>
+</html>

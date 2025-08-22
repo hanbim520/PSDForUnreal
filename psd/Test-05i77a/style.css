@@ -1,0 +1,33 @@
+body {
+    color: white;
+    padding: 0 16px;
+  }
+  li:before {
+    content: '• ';
+    width: 3em;
+  }
+
+  #layers {
+    border: 1px solid #808080;
+    border-radius: 4px;
+    padding: 16px;
+  }
+
+  /* 这个是关键，负责隐藏元素 */
+.hidden {
+    display: none;
+}
+
+/* 这是为了让面板看起来更好看，可以一并放进去 */
+.panel {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.text-highlight {
+    color: red;
+    /* 您也可以添加其他样式，比如加粗 */
+    font-weight: bold; 
+}
